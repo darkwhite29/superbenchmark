@@ -78,7 +78,7 @@ superbench:
           prefix: PROC_RANK={proc_rank} IB_DEVICES=1,3,5,7 NUMA_NODES=1,0,3,2
           parallel: yes
     disk-benchmark:
-      enable: false
+      enable: true
       modes:
         - name: local
           proc_num: 1
@@ -87,7 +87,7 @@ superbench:
         block_devices:
           - /dev/nvme0n1
     cpu-memory-bw-latency:
-      enable: false
+      enable: true
       modes:
         - name: local
           proc_num: 1
@@ -150,45 +150,6 @@ superbench:
       <<: *default_pytorch_mode
     computation-communication-overlap:
       <<: *default_pytorch_mode
-    ib-traffic:
-      enable: false
-      modes:
-        - name: mpi
-          proc_num: 8
-      parameters:
-        msg_size: 8388608
-        ib_dev: mlx5_$LOCAL_RANK
-        gpu_dev: $LOCAL_RANK
-        numa_dev: $((LOCAL_RANK/2))
-    gpcnet-network-test:
-      enable: false
-      modes:
-        - name: mpi
-          proc_num: 1
-          mca:
-            pml: ucx
-            btl: ^uct
-            btl_tcp_if_include: eth0
-          env:
-            UCX_NET_DEVICES: mlx5_0:1
-    gpcnet-network-load-test:
-      enable: false
-      modes:
-        - name: mpi
-          proc_num: 1
-          mca:
-            pml: ucx
-            btl: ^uct
-            btl_tcp_if_include: eth0
-          env:
-            UCX_NET_DEVICES: mlx5_0:1
-    tcp-connectivity:
-      enable: false
-      modes:
-        - name: local
-          parallel: no
-      parameters:
-        port: 22
     ort-inference:
       <<: *default_local_mode
       parameters:
@@ -214,40 +175,25 @@ superbench:
         - gpt2-large
       parameters:
         <<: *common_model_config
-    bert_models:
-      <<: *default_pytorch_mode
+    # PyTorch real world training and inference
+    model-benchmarks:gpt-offline:
+      <<: *default_local_mode
+      frameworks:
+        - pytorch
       models:
-        - bert-base
-        - bert-large
+        - gpt2-small
+        - gpt2-large
       parameters:
-        <<: *common_model_config
-    lstm_models:
-      <<: *default_pytorch_mode
+        <<: *offline_inference_config
+        batch_size: 8
+        seq_len: 224
+    model-benchmarks:gpt-online:
+      <<: *default_local_mode
+      frameworks:
+        - pytorch
       models:
-        - lstm
+        - gpt2-small
+        - gpt2-large
       parameters:
-        <<: *common_model_config
-    resnet_models:
-      <<: *default_pytorch_mode
-      models:
-        - resnet50
-        - resnet101
-        - resnet152
-      parameters:
-        <<: *common_model_config
-    densenet_models:
-      <<: *default_pytorch_mode
-      models:
-        - densenet169
-        - densenet201
-      parameters:
-        <<: *common_model_config
-    vgg_models:
-      <<: *default_pytorch_mode
-      models:
-        - vgg11
-        - vgg13
-        - vgg16
-        - vgg19
-      parameters:
-        <<: *common_model_config
+        <<: *online_inference_config
+        seq_len: 224
